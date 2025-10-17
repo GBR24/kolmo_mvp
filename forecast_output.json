@@ -1,0 +1,26 @@
+{
+    "$id": "schemas/forecast_output.json",
+    "type": "object",
+    "required": ["symbol", "as_of", "horizon", "method", "predictions"],
+    "properties": {
+      "symbol": { "type": "string" },
+      "as_of": { "type": "string", "format": "date-time" },
+      "horizon": { "type": "string", "examples": ["1d", "5d"] },
+      "method": { "type": "string", "examples": ["GBM", "ARIMA"] },
+      "params": { "type": "object", "additionalProperties": true },
+      "predictions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["t", "value"],
+          "properties": {
+            "t": { "type": "string", "format": "date-time" },
+            "value": { "type": "number" },
+            "ci_low": { "type": "number" },
+            "ci_high": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+  

@@ -1,0 +1,19 @@
+{
+    "$id": "schemas/market_tick.json",
+    "type": "object",
+    "required": ["symbol", "timestamp", "price"],
+    "properties": {
+      "symbol": { "type": "string", "examples": ["BRN=F", "CL=F", "NG=F"] },
+      "timestamp": { "type": "string", "format": "date-time" },
+      "price": { "type": "number" },
+      "open": { "type": "number" },
+      "high": { "type": "number" },
+      "low": { "type": "number" },
+      "volume": { "type": "number" },
+      "fx_base": { "type": "string", "examples": ["USD"] },
+      "fx_quote": { "type": "string", "examples": ["EUR"] },
+      "fx_rate": { "type": "number" },
+      "source": { "type": "string" }
+    }
+  }
+  
