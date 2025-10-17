@@ -1,0 +1,23 @@
+{
+    "$id": "schemas/insight_summary.json",
+    "type": "object",
+    "required": ["topic", "as_of", "bullets", "citations"],
+    "properties": {
+      "topic": { "type": "string" },
+      "as_of": { "type": "string", "format": "date-time" },
+      "bullets": { "type": "array", "items": { "type": "string" } },
+      "citations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["title", "url"],
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" },
+            "published_at": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
+  
