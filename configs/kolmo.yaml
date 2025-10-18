@@ -1,0 +1,16 @@
+market:
+  symbols: ["BRN=F", "CL=F", "NG=F"]
+  fx_pair: "USD/EUR"
+  refresh_sec: 60
+forecast:
+  default_method: "GBM"
+  horizons: ["1d", "5d"]
+rag:
+  top_k: 8
+  chunk_size: 800
+  chunk_overlap: 80
+mcp:
+  tools:
+    - fetch_market_data
+    - run_forecast
+    - retrieve_news
