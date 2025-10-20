@@ -18,10 +18,16 @@ CONFIG = {
         "symbols": {
             "BRN":  {"name": "Brent Spot Price",       "provider": "eia", "id": "PET.RBRTE.D",                                   "asset": "crude"},
             "WTI":  {"name": "WTI Spot Price",         "provider": "eia", "id": "PET.RWTC.D",                                    "asset": "crude"},
-            "RBOB": {"name": "Gasoline (RBOB proxy)",  "provider": "eia", "id": "PET.EER_EPMRR_PF4_Y35NY_DPG.D",                 "asset": "gasoline"},
-            "HO":   {"name": "Heating Oil (No.2)",     "provider": "eia", "id": "PET.EER_EPD2D_PF4_Y35NY_DPG.D",                 "asset": "gasoil"},
+            #"RBOB": {"name": "Gasoline (RBOB proxy)",  "provider": "eia", "id": "PET.EER_EPMRR_PF4_Y35NY_DPG.D",                 "asset": "gasoline"},
+            #"HO":   {"name": "Heating Oil (No.2)",     "provider": "eia", "id": "PET.EER_EPD2D_PF4_Y35NY_DPG.D",                 "asset": "gasoil"},
             "NG":   {"name": "Henry Hub Natural Gas",  "provider": "eia", "id": "NG.RNGWHHD.D",                                  "asset": "natgas"},
-            "JET":  {"name": "Kerosene-Type Jet Fuel", "provider": "eia", "id": "PET.EER_EPDJ_PF4_Y35NY_DPG.D",                  "asset": "jet"},
+            #"JET":  {"name": "Kerosene-Type Jet Fuel", "provider": "eia", "id": "PET.EER_EPDJ_PF4_Y35NY_DPG.D",                  "asset": "jet"},
+            #"cl":   {"name": "WTI Crude",              "provider": "oilprice", "commodity": "wti"},
+            #"br":   {"name": "brent Crude",            "provider": "oilprice", "commodity": "brent"},
+            #"ng":   {"name": "Henry Hub",              "provider": "oilprice", "commodity": "natural_gas"},
+            #"cl" :   {"name": "WTI Crude Oil Futures",  "provider": "nasdaq", "dataset": "CHRIS/CME_CL1"},
+            #"br" :   {"name": "Brent Crude Oil Futures",  "provider": "nasdaq", "dataset": "CHRIS/ICE_B1"},
+            #"ng" :   {"name": "Henry Hub Natural Gas Futures",  "provider": "nasdaq", "dataset": "CHRIS/CME_NG1"},
         }
     },
     "news": {
