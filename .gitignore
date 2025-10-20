@@ -1,0 +1,25 @@
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# ---- Environment ----
+.env
+.env.*
+*.sqlite
+*.db
+*.duckdb
+
+# ---- Virtual environments ----
+venv/
+.env/
+.venv/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- VSCode ----
+.vscode/

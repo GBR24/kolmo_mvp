@@ -1,25 +1,34 @@
-from os import getenv
+# kolmo_core/config/config.py
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Resolve repo root no matter where code is run from
+ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env")
 
 CONFIG = {
     "db": {
-        "url": getenv("DB_URL", "duckdb:///kolmo_core/data/kolmo.duckdb")
+        # Use a plain filesystem path (NOT "duckdb:///...").
+        "url": os.getenv("DB_URL", str(ROOT / "kolmo_core" / "data" / "kolmo.duckdb")),
     },
     "market": {
-        # You can switch provider per product later (e.g., "eia")
+        # EIA series IDs (daily) for crude, products, and gas.
+        # Sources: EIA API (free). You must have EIA_API_KEY in .env
         "symbols": {
-            # Futures via Yahoo Finance (liquid + easy)
-            "BRN":   {"name": "Brent Crude",            "provider": "yahoo", "id": "BZ=F", "asset": "crude"},
-            "WTI":   {"name": "WTI Crude",              "provider": "yahoo", "id": "CL=F", "asset": "crude"},
-            "RBOB":  {"name": "RBOB Gasoline",          "provider": "yahoo", "id": "RB=F", "asset": "gasoline"},
-            "HO":    {"name": "Heating Oil (ICE Gasoil proxy)", "provider": "yahoo", "id": "HO=F", "asset": "gasoil"},
-            "NG":    {"name": "Henry Hub Natural Gas",  "provider": "yahoo", "id": "NG=F", "asset": "natgas"},
-            # Jet fuel doesn’t have a liquid public ticker; use Heating Oil as a proxy,
-            # or later replace with EIA series if you have the exact series id.
-            "JET":   {"name": "Jet Fuel (proxy = HO)",  "provider": "proxy", "id": "HO=F", "asset": "jet"},
+            "BRN":  {"name": "Brent Spot Price",       "provider": "eia", "id": "PET.RBRTE.D",                                   "asset": "crude"},
+            "WTI":  {"name": "WTI Spot Price",         "provider": "eia", "id": "PET.RWTC.D",                                    "asset": "crude"},
+            "RBOB": {"name": "Gasoline (RBOB proxy)",  "provider": "eia", "id": "PET.EER_EPMRR_PF4_Y35NY_DPG.D",                 "asset": "gasoline"},
+            "HO":   {"name": "Heating Oil (No.2)",     "provider": "eia", "id": "PET.EER_EPD2D_PF4_Y35NY_DPG.D",                 "asset": "gasoil"},
+            "NG":   {"name": "Henry Hub Natural Gas",  "provider": "eia", "id": "NG.RNGWHHD.D",                                  "asset": "natgas"},
+            "JET":  {"name": "Kerosene-Type Jet Fuel", "provider": "eia", "id": "PET.EER_EPDJ_PF4_Y35NY_DPG.D",                  "asset": "jet"},
         }
     },
     "news": {
-        "default_queries": ["oil", "brent", "wti", "gasoline", "diesel", "gasoil", "natural gas", "opec", "refinery", "jet fuel"],
+        "default_queries": [
+            "oil", "brent", "wti", "gasoline", "diesel", "gasoil",
+            "natural gas", "opec", "refinery", "jet fuel"
+        ],
         "max_per_query": 25,
     }
 }
