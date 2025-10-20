@@ -51,4 +51,3 @@ CONFIG = {
         "max_per_query": 25,
     }
 }
-
