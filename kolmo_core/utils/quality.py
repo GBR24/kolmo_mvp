@@ -52,12 +52,17 @@ def check_prices(db_path: Optional[str] = None, min_days: int = 60, symbols: Opt
 def check_predictions(db_path: Optional[str] = None, symbols: Optional[Sequence[str]] = None) -> pd.DataFrame:
     db = db_path or _db()
     con = duckdb.connect(db)
-    sym_filter = f"WHERE symbol IN ({','.join(repr(s) for s in symbols)})" if symbols else ""
+
+    # optional symbol filter
+    where_clause = ""
+    if symbols:
+        sym_list = ",".join(repr(s) for s in symbols)
+        where_clause = f"WHERE symbol IN ({sym_list})"
 
     # Nulls?
     nulls = con.execute(f"""
       SELECT COUNT(*) AS nulls
-      FROM predictions {sym_filter}
+      FROM predictions {where_clause}
       WHERE date IS NULL OR symbol IS NULL OR y_hat IS NULL OR method IS NULL
     """).fetchone()[0]
     _fail_if(nulls > 0, f"[predictions] Found {nulls} NULLs in required columns")
@@ -66,29 +71,29 @@ def check_predictions(db_path: Optional[str] = None, symbols: Optional[Sequence[
     dups = con.execute(f"""
       SELECT COUNT(*) FROM (
         SELECT date, symbol, method, COUNT(*) c
-        FROM predictions {sym_filter}
+        FROM predictions {where_clause}
         GROUP BY 1,2,3 HAVING COUNT(*) > 1
       )
     """).fetchone()[0]
     _fail_if(dups > 0, f"[predictions] Found {dups} duplicate (date,symbol,method) keys")
 
     # Prediction date should be >= latest price date
+    sym_filter = f"WHERE pr.symbol IN ({sym_list})" if symbols else ""
     misaligned = con.execute(f"""
       WITH last_price AS (
         SELECT symbol, MAX(date) AS maxp FROM prices GROUP BY symbol
       )
       SELECT COUNT(*) FROM predictions pr
       JOIN last_price lp USING(symbol)
-      {('WHERE' if not sym_filter else 'AND') if sym_filter else ''}
-      {sym_filter.replace('WHERE','')} 
+      {sym_filter}
       AND pr.date < lp.maxp
     """).fetchone()[0]
     _fail_if(misaligned > 0, f"[predictions] {misaligned} rows predict before latest price date")
 
-    # Summary
+    # Summary table
     summary = con.execute(f"""
       SELECT symbol, method, COUNT(*) AS n_rows, MIN(date) AS min_d, MAX(date) AS max_d
-      FROM predictions {sym_filter}
+      FROM predictions {where_clause}
       GROUP BY 1,2 ORDER BY 1,2
     """).fetchdf()
     return summary
