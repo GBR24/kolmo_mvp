@@ -1,50 +1,52 @@
-# scripts/make_mock_prices.py
-from __future__ import annotations
+# kolmo_core/ingestion/mock_ingestion.py
 import os
 from pathlib import Path
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+import duckdb
+from kolmo_core.config import CONFIG
 
-# ---- Paths (repo-relative) ----
-CSV_PATH = "kolmo_core/data/mock/kolmo_mock_prices.csv"
-Path(os.path.dirname(CSV_PATH)).mkdir(parents=True, exist_ok=True)
+TABLE = "prices"
 
-# ---- Calendar ----
-end_date = datetime.today().date()
-start_date = end_date - timedelta(days=180)   # ~6 months of biz days
-dates = pd.bdate_range(start=start_date, end=end_date, freq="C")
+def main():
+    csv_path = CONFIG["ingestion"]["mock_csv"]  # e.g. kolmo_core/data/mock/kolmo_mock_prices.csv
+    db_url = CONFIG["storage"]["db_url"]        # e.g. duckdb:///kolmo_core/data/kolmo.duckdb
+    db_file = db_url.replace("duckdb:///", "")  # -> kolmo_core/data/kolmo.duckdb
 
-# ---- Symbols (unit, rough drift, noise) ----
-SYMS = {
-    # refined products
-    "RBOB":  {"base": 2.40, "trend": 0.0008, "vol": 0.020, "unit": "USD/gal"},
-    "HO":    {"base": 2.70, "trend": 0.0006, "vol": 0.022, "unit": "USD/gal"},
-    "JET":   {"base": 2.55, "trend": 0.0007, "vol": 0.018, "unit": "USD/gal"},
-    # crude benchmarks
-    "BRENT": {"base": 84.0, "trend": 0.0005, "vol": 0.90,  "unit": "USD/bbl"},
-    "WTI":   {"base": 80.0, "trend": 0.0005, "vol": 0.95,  "unit": "USD/bbl"},
-    # gas
-    "NG":    {"base": 2.80, "trend": 0.0004, "vol": 0.10,  "unit": "USD/MMBtu"},
-}
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Mock CSV not found: {csv_path}")
 
-rng = np.random.default_rng(42)
-rows = []
+    Path(os.path.dirname(db_file)).mkdir(parents=True, exist_ok=True)
 
-for sym, p in SYMS.items():
-    price = p["base"]
-    for d in dates:
-        # simple AR(1)-ish drift + noise; keep > 0
-        price = max(0.01, price * (1 + p["trend"]) + rng.normal(0, p["vol"]))
-        rows.append({
-            "date": d.date().isoformat(),
-            "symbol": sym,
-            "price": round(float(price), 4),
-            "unit": p["unit"],
-            "source": "MOCK",
-            "frequency": "daily",
-        })
+    df = pd.read_csv(csv_path, parse_dates=["date"])
+    df["date"] = df["date"].dt.date
 
-df = pd.DataFrame(rows).sort_values(["date","symbol"]).reset_index(drop=True)
-df.to_csv(CSV_PATH, index=False)
-print(f"Saved mock prices -> {CSV_PATH} ({len(df)} rows)")
+    con = duckdb.connect(db_file)
+
+    # Ensure table schema
+    con.execute(f"""
+    CREATE TABLE IF NOT EXISTS {TABLE} (
+      date DATE,
+      symbol TEXT,
+      price DOUBLE,
+      unit TEXT,
+      source TEXT,
+      frequency TEXT
+    );
+    """)
+
+    # Idempotent upsert (delete matching keys then insert)
+    con.register("df_src", df)
+    con.execute(f"""
+    DELETE FROM {TABLE}
+    USING df_src s
+    WHERE {TABLE}.date = s.date AND {TABLE}.symbol = s.symbol;
+    """)
+    con.execute(f"""
+    INSERT INTO {TABLE}
+    SELECT date, symbol, price, unit, source, frequency FROM df_src;
+    """)
+
+    print(f"Ingested {len(df)} rows from {csv_path} into {db_file}::{TABLE}")
+
+if __name__ == "__main__":
+    main()
