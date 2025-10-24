@@ -18,6 +18,11 @@ if str(ROOT) not in sys.path:
 # Import UI blocks only AFTER set_page_config
 from apps.ui.blocks.predictions_panel import predictions_panel
 
+# --- Agent orchestration imports ---
+from apps.agents.supervisor import handle as supervisor_handle
+from apps.agents.registry import TOOL_REGISTRY
+from apps.agents.blackboard import Blackboard
+
 # --- Paths ---
 DB = ROOT / "kolmo_core" / "data" / "kolmo.duckdb"
 
@@ -162,3 +167,46 @@ if symbols:
         st.line_chart(hist.set_index("ts")["price"], height=260)
 else:
     st.info("No symbols found in prices yet.")
+
+st.markdown("---")
+
+# =========================
+# Chat-style agent section
+# =========================
+st.subheader("💬 Ask Kolmo (multi-agent)")
+user_prompt = st.chat_input("Ask for an analysis, e.g. 'Forecast & news for BRENT'")
+
+if user_prompt:
+    bb = Blackboard()
+    result = supervisor_handle(user_prompt, tools=TOOL_REGISTRY, blackboard=bb)
+
+    if not result.get("ok"):
+        st.error("Supervisor failed to produce a report.")
+    else:
+        md_path = (result.get("report") or {}).get("md_path")
+        if md_path and Path(md_path).exists():
+            st.success(f"Report generated: {md_path}")
+            with open(md_path, "r", encoding="utf-8") as f:
+                st.markdown(f.read())
+            with open(md_path, "rb") as fh:
+                st.download_button(
+                    "Download report (Markdown)",
+                    data=fh.read(),
+                    file_name=Path(md_path).name,
+                    mime="text/markdown",
+                )
+
+        # Transparency: plan + confidence + citations
+        with st.expander("Agent plan & audit"):
+            st.json({"plan": result.get("plan"), "confidence": result.get("confidence")})
+        citations = result.get("citations") or []
+        if citations:
+            st.markdown("**Citations:**")
+            for c in citations:
+                title = c.get("title","(untitled)")
+                link = c.get("link","")
+                source = c.get("source","")
+                if link:
+                    st.markdown(f"- [{title}]({link}) — _{source}_")
+                else:
+                    st.markdown(f"- {title} — _{source}_")
