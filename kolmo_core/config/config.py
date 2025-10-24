@@ -2,42 +2,32 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from kolmo_core.config.path_utils import as_project_relative
 
+# ---------------------------------------------------------------------
 # Resolve repo root no matter where code is run from
+# ---------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
 
+# ---------------------------------------------------------------------
+# Base configuration dictionary
+# ---------------------------------------------------------------------
 CONFIG = {
     "storage": {
+        # Use relative path (GitHub-friendly)
         "db_url": "duckdb:///kolmo_core/data/kolmo.duckdb",
     },
     "ingestion": {
         "use_mock": True,  # switch off later when EIA is stable
-        "mock_csv": "/mnt/data/kolmo_mock_prices.csv",
-    },
-    "market": {
-        "symbols": ["RBOB", "HO", "JET"],
-    },
-    "db": {
-        # Use a plain filesystem path (NOT "duckdb:///...").
-        "url": os.getenv("DB_URL", str(ROOT / "kolmo_core" / "data" / "kolmo.duckdb")),
+        "mock_csv": "kolmo_core/data/mock/kolmo_mock_prices.csv",
     },
     "market": {
         # EIA series IDs (daily) for crude, products, and gas.
-        # Sources: EIA API (free). You must have EIA_API_KEY in .env
         "symbols": {
-            "BRN":  {"name": "Brent Spot Price",       "provider": "eia", "id": "PET.RBRTE.D",                                   "asset": "crude"},
-            "WTI":  {"name": "WTI Spot Price",         "provider": "eia", "id": "PET.RWTC.D",                                    "asset": "crude"},
-            #"RBOB": {"name": "Gasoline (RBOB proxy)",  "provider": "eia", "id": "PET.EER_EPMRR_PF4_Y35NY_DPG.D",                 "asset": "gasoline"},
-            #"HO":   {"name": "Heating Oil (No.2)",     "provider": "eia", "id": "PET.EER_EPD2D_PF4_Y35NY_DPG.D",                 "asset": "gasoil"},
-            "NG":   {"name": "Henry Hub Natural Gas",  "provider": "eia", "id": "NG.RNGWHHD.D",                                  "asset": "natgas"},
-            #"JET":  {"name": "Kerosene-Type Jet Fuel", "provider": "eia", "id": "PET.EER_EPDJ_PF4_Y35NY_DPG.D",                  "asset": "jet"},
-            #"cl":   {"name": "WTI Crude",              "provider": "oilprice", "commodity": "wti"},
-            #"br":   {"name": "brent Crude",            "provider": "oilprice", "commodity": "brent"},
-            #"ng":   {"name": "Henry Hub",              "provider": "oilprice", "commodity": "natural_gas"},
-            #"cl" :   {"name": "WTI Crude Oil Futures",  "provider": "nasdaq", "dataset": "CHRIS/CME_CL1"},
-            #"br" :   {"name": "Brent Crude Oil Futures",  "provider": "nasdaq", "dataset": "CHRIS/ICE_B1"},
-            #"ng" :   {"name": "Henry Hub Natural Gas Futures",  "provider": "nasdaq", "dataset": "CHRIS/CME_NG1"},
+            "BRN": {"name": "Brent Spot Price", "provider": "eia", "id": "PET.RBRTE.D", "asset": "crude"},
+            "WTI": {"name": "WTI Spot Price", "provider": "eia", "id": "PET.RWTC.D", "asset": "crude"},
+            "NG":  {"name": "Henry Hub Natural Gas", "provider": "eia", "id": "NG.RNGWHHD.D", "asset": "natgas"},
         }
     },
     "news": {
@@ -48,3 +38,22 @@ CONFIG = {
         "max_per_query": 25,
     }
 }
+
+# ---------------------------------------------------------------------
+# Normalize paths to relative (never absolute)
+# ---------------------------------------------------------------------
+CONFIG["ingestion"]["mock_csv"] = as_project_relative(
+    CONFIG["ingestion"].get("mock_csv"),
+    "kolmo_core/data/mock/kolmo_mock_prices.csv"
+)
+
+_db_rel = CONFIG["storage"].get("db_url", "").replace("duckdb:///","")
+_db_rel = as_project_relative(_db_rel, "kolmo_core/data/kolmo.duckdb")
+CONFIG["storage"]["db_url"] = f"duckdb:///{_db_rel}"
+
+# ---------------------------------------------------------------------
+# Optional: log config on import for sanity
+# ---------------------------------------------------------------------
+if __name__ == "__main__":
+    print("mock_csv =", CONFIG["ingestion"]["mock_csv"])
+    print("db_url   =", CONFIG["storage"]["db_url"])
